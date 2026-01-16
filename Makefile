@@ -10,5 +10,14 @@ build/main: main.c
 run: build
 	./build/main
 
+vendor: vendor/sokol
+
+vendor/sokol:
+	test -d vendor || mkdir -p vendor
+	git clone https://github.com/floooh/sokol.git vendor/sokol
+
+clean-vendor:
+	rm -rf vendor/sokol
+
 clean:
 	rm -f build/main
