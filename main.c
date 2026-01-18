@@ -19,9 +19,10 @@ void init(void) {
   });
 
   float vertices[] = {
-      0.0f,  0.5f,  0.0f, // top
-      0.5f,  -0.5f, 0.0f, // right
-      -0.5f, -0.5f, 0.0f, // left
+      // x      y      z     r    g    b
+      0.0f,  0.5f,  0.0f, 1.0, 0.0, 0.0, // top
+      0.5f,  -0.5f, 0.0f, 0.0, 1.0, 0.0, // right
+      -0.5f, -0.5f, 0.0f, 0.0, 0.0, 1.0, // left
   };
 
   state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
@@ -33,6 +34,7 @@ void init(void) {
       .layout = {.attrs =
                      {
                          [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
+                         [ATTR_triangle_color].format = SG_VERTEXFORMAT_FLOAT3,
                      }},
   });
 

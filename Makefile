@@ -19,5 +19,8 @@ vendor/sokol:
 clean-vendor:
 	rm -rf vendor/sokol
 
+shader:
+	./sokol-shdc --input assets/shaders/triangle.glsl --output triangle_shader.h --slang glsl430:hlsl5:metal_macos
+
 clean:
 	rm -f build/main
