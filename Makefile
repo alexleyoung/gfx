@@ -1,13 +1,13 @@
 .PHONY: all clean
 
-all: build
+all: run
 
 build: build/main
 
 build/main: main.c
 	zig cc main.c -o build/main -lX11 -lXi -lXcursor -lGL -lasound -ldl -lm
 
-run: build
+run: clean build shader
 	./build/main
 
 vendor: vendor/sokol

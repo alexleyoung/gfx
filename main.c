@@ -20,9 +20,16 @@ void init(void) {
 
   float vertices[] = {
       // x      y      z     r    g    b
-      0.0f,  0.5f,  0.0f, 1.0, 0.0, 0.0, // top
-      0.5f,  -0.5f, 0.0f, 0.0, 1.0, 0.0, // right
-      -0.5f, -0.5f, 0.0f, 0.0, 0.0, 1.0, // left
+      // triangle
+      // 0.0f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, // top
+      // 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // right
+      // -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // left
+
+      // quad
+      -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 0.0f, //
+      0.5f,  0.5f,  0.0f, 0.0f, 1.0f, 0.0f, //
+      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, //
+      0.5f,  -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, //
   };
 
   state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
@@ -36,11 +43,12 @@ void init(void) {
                          [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
                          [ATTR_triangle_color].format = SG_VERTEXFORMAT_FLOAT3,
                      }},
+      .primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
   });
 
   state.pass_action =
       (sg_pass_action){.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
-                                     .clear_value = {0.4, 0.6, 1.0, 1.0}}};
+                                     .clear_value = {0.1, 0.1, 0.1, 1.0}}};
 }
 void frame(void) {
   sg_begin_pass(
@@ -48,7 +56,7 @@ void frame(void) {
 
   sg_apply_pipeline(state.pipeline);
   sg_apply_bindings(&state.binding);
-  sg_draw(0, 3, 1);
+  sg_draw(0, 4, 1);
 
   sg_end_pass();
   sg_commit();
@@ -62,7 +70,9 @@ int main() {
       .frame_cb = frame,
       .cleanup_cb = cleanup,
       .event_cb = event,
+      .width = 800,
+      .height = 800,
   });
 
-  return 1;
+  return 0;
 }
