@@ -5,13 +5,35 @@
 #include "vendor/sokol/sokol_gfx.h"
 #include "vendor/sokol/sokol_glue.h"
 
+#include "triangle_shader.h"
+
 static struct {
   sg_pass_action pass_action;
+  sg_bindings binding;
+  sg_pipeline pipeline;
 } state;
 
 void init(void) {
   sg_setup(&(sg_desc){
       .environment = sglue_environment(),
+  });
+
+  float vertices[] = {
+      0.0f,  0.5f,  0.0f, // top
+      0.5f,  -0.5f, 0.0f, // right
+      -0.5f, -0.5f, 0.0f, // left
+  };
+
+  state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
+      .data = SG_RANGE(vertices),
+  });
+
+  state.pipeline = sg_make_pipeline(&(sg_pipeline_desc){
+      .shader = sg_make_shader(triangle_shader_desc(sg_query_backend())),
+      .layout = {.attrs =
+                     {
+                         [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
+                     }},
   });
 
   state.pass_action =
@@ -21,6 +43,11 @@ void init(void) {
 void frame(void) {
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
+
+  sg_apply_pipeline(state.pipeline);
+  sg_apply_bindings(&state.binding);
+  sg_draw(0, 3, 1);
+
   sg_end_pass();
   sg_commit();
 }
