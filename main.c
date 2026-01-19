@@ -14,11 +14,11 @@ static void mat4_rotate_z(float *m, float angle) {
   float s = sinf(angle);
 
   m[0] = c;
-  m[4] = -s;
+  m[4] = s;
   m[8] = 0.0f;
   m[12] = 0.0f;
 
-  m[1] = s;
+  m[1] = -s;
   m[5] = c;
   m[9] = 0.0f;
   m[13] = 0.0f;
