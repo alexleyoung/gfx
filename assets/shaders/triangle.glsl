@@ -1,12 +1,16 @@
 @vs vertex_shader
 
+layout(binding=0) uniform vs_params {
+    mat4 mvp;
+};
+
 in vec3 pos;
 in vec3 color;
 
 out vec3 out_color;
 
 void main() {
-  gl_Position = vec4(pos, 1.0);
+  gl_Position = mvp * vec4(pos, 1.0);
   out_color = color;
 }
 

@@ -1,3 +1,5 @@
+#include <math.h>
+
 #define SOKOL_IMPL
 #define SOKOL_GLCORE
 #define SOKOL_NO_ENTRY
@@ -6,6 +8,31 @@
 #include "vendor/sokol/sokol_glue.h"
 
 #include "triangle_shader.h"
+
+static void mat4_rotate_z(float *m, float angle) {
+  float c = cosf(angle);
+  float s = sinf(angle);
+
+  m[0] = c;
+  m[4] = -s;
+  m[8] = 0.0f;
+  m[12] = 0.0f;
+
+  m[1] = s;
+  m[5] = c;
+  m[9] = 0.0f;
+  m[13] = 0.0f;
+
+  m[2] = 0.0f;
+  m[6] = 0.0f;
+  m[10] = 1.0f;
+  m[14] = 0.0f;
+
+  m[3] = 0.0f;
+  m[7] = 0.0f;
+  m[11] = 0.0f;
+  m[15] = 1.0f;
+}
 
 static struct {
   sg_pass_action pass_action;
@@ -51,11 +78,21 @@ void init(void) {
                                      .clear_value = {0.1, 0.1, 0.1, 1.0}}};
 }
 void frame(void) {
+  static float rot = 0.0f;
+  rot += 0.01f;
+
+  vs_params_t vs_params;
+  mat4_rotate_z(vs_params.mvp, rot);
+
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
 
   sg_apply_pipeline(state.pipeline);
   sg_apply_bindings(&state.binding);
+  sg_apply_uniforms(0, &(sg_range){
+                           .ptr = &vs_params,
+                           .size = sizeof(vs_params),
+                       });
   sg_draw(0, 4, 1);
 
   sg_end_pass();
