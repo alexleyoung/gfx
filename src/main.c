@@ -1,38 +1,13 @@
-#include <math.h>
-
 #define SOKOL_IMPL
 #define SOKOL_GLCORE
 #define SOKOL_NO_ENTRY
-#include "vendor/sokol/sokol_app.h"
-#include "vendor/sokol/sokol_gfx.h"
-#include "vendor/sokol/sokol_glue.h"
+#include "../vendor/sokol/sokol_app.h"
+#include "../vendor/sokol/sokol_gfx.h"
+#include "../vendor/sokol/sokol_glue.h"
 
-#include "triangle_shader.h"
-
-static void mat4_rotate_z(float *m, float angle) {
-  float c = cosf(angle);
-  float s = sinf(angle);
-
-  m[0] = c;
-  m[4] = s;
-  m[8] = 0.0f;
-  m[12] = 0.0f;
-
-  m[1] = -s;
-  m[5] = c;
-  m[9] = 0.0f;
-  m[13] = 0.0f;
-
-  m[2] = 0.0f;
-  m[6] = 0.0f;
-  m[10] = 1.0f;
-  m[14] = 0.0f;
-
-  m[3] = 0.0f;
-  m[7] = 0.0f;
-  m[11] = 0.0f;
-  m[15] = 1.0f;
-}
+#include "../include/my_math.h"
+#include "../include/shapes.h"
+#include "../include/triangle_shader.h"
 
 static struct {
   sg_pass_action pass_action;
@@ -45,22 +20,8 @@ void init(void) {
       .environment = sglue_environment(),
   });
 
-  float vertices[] = {
-      // x      y      z     r    g    b
-      // triangle
-      // 0.0f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, // top
-      // 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // right
-      // -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // left
-
-      // quad
-      -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 0.0f, //
-      0.5f,  0.5f,  0.0f, 0.0f, 1.0f, 0.0f, //
-      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, //
-      0.5f,  -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, //
-  };
-
   state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
-      .data = SG_RANGE(vertices),
+      .data = SG_RANGE(cube_vertices),
   });
 
   state.pipeline = sg_make_pipeline(&(sg_pipeline_desc){
@@ -70,7 +31,7 @@ void init(void) {
                          [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
                          [ATTR_triangle_color].format = SG_VERTEXFORMAT_FLOAT3,
                      }},
-      .primitive_type = SG_PRIMITIVETYPE_TRIANGLE_STRIP,
+      .primitive_type = SG_PRIMITIVETYPE_TRIANGLES,
   });
 
   state.pass_action =
@@ -93,7 +54,7 @@ void frame(void) {
                            .ptr = &vs_params,
                            .size = sizeof(vs_params),
                        });
-  sg_draw(0, 4, 1);
+  sg_draw(0, 36, 1);
 
   sg_end_pass();
   sg_commit();
