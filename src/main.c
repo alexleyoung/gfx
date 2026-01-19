@@ -1,3 +1,5 @@
+#include <time.h>
+
 #define SOKOL_IMPL
 #define SOKOL_GLCORE
 #define SOKOL_NO_ENTRY
@@ -9,11 +11,16 @@
 #include "../include/shapes.h"
 #include "../include/triangle_shader.h"
 
+static size_t frames = 0;
+static clock_t start_time = 0;
+
 static struct {
   sg_pass_action pass_action;
   sg_bindings binding;
   sg_pipeline pipeline;
 } state;
+
+const size_t NUM_VERTICES = 0;
 
 void init(void) {
   sg_setup(&(sg_desc){
@@ -37,27 +44,29 @@ void init(void) {
   state.pass_action =
       (sg_pass_action){.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
                                      .clear_value = {0.1, 0.1, 0.1, 1.0}}};
+  start_time = clock();
 }
 void frame(void) {
   static float rot = 0.0f;
   rot += 0.01f;
 
   vs_params_t vs_params;
-  mat4_rotate_z(vs_params.mvp, rot);
+  mat4_rotate_y(vs_params.mvp, rot);
 
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
 
   sg_apply_pipeline(state.pipeline);
   sg_apply_bindings(&state.binding);
-  sg_apply_uniforms(0, &(sg_range){
-                           .ptr = &vs_params,
-                           .size = sizeof(vs_params),
-                       });
+  sg_apply_uniforms(UB_vs_params, &(sg_range){
+                                      .ptr = &vs_params,
+                                      .size = sizeof(vs_params),
+                                  });
   sg_draw(0, 36, 1);
 
   sg_end_pass();
   sg_commit();
+  frames++;
 }
 void cleanup(void) {}
 void event(const sapp_event *ev) {}
@@ -71,6 +80,10 @@ int main() {
       .width = 800,
       .height = 800,
   });
+
+  clock_t end_time = clock();
+  double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+  printf("total frames rendered: %zu in %.2f seconds (%.2f fps)\n", frames, elapsed_time, frames / elapsed_time);
 
   return 0;
 }
