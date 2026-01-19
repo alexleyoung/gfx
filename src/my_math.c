@@ -1,4 +1,30 @@
-#include "my_math.h"
+#include "../include/my_math.h"
+#include <math.h>
+
+void mat4_rotate_x(float *m, float angle) {
+  float c = cosf(angle);
+  float s = sinf(angle);
+
+  m[0] = 1.0f;
+  m[4] = 0.0f;
+  m[8] = 0.0f;
+  m[12] = 0.0f;
+
+  m[1] = 0.0f;
+  m[5] = c;
+  m[9] = -s;
+  m[13] = 0.0f;
+
+  m[2] = 0.0f;
+  m[6] = s;
+  m[10] = c;
+  m[14] = 0.0f;
+
+  m[3] = 0.0f;
+  m[7] = 0.0f;
+  m[11] = 0.0f;
+  m[15] = 1.0f;
+}
 
 void mat4_rotate_y(float *m, float angle) {
   float c = cosf(angle);

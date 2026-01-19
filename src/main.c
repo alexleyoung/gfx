@@ -11,8 +11,15 @@
 #include "../include/shapes.h"
 #include "../include/triangle_shader.h"
 
+enum ROTATION {
+  ROT_X,
+  ROT_Y,
+  ROT_Z,
+};
+
 static size_t frame_count = 0;
 static clock_t start_time = 0;
+static enum ROTATION rot = ROT_X;
 
 static struct {
   sg_pass_action pass_action;
@@ -48,11 +55,20 @@ void init(void) {
 }
 
 void frame(void) {
-  static float rot = 0.0f;
-  rot += 0.01f;
+  static float angle = 0.0f;
+  angle += 0.01f;
 
   vs_params_t vs_params;
-  mat4_rotate_y(vs_params.mvp, rot);
+  switch (rot) {
+  case ROT_X:
+    mat4_rotate_x(vs_params.mvp, angle);
+    break;
+  case ROT_Y:
+    mat4_rotate_y(vs_params.mvp, angle);
+    break;
+  case ROT_Z:
+    mat4_rotate_z(vs_params.mvp, angle);
+  }
 
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
@@ -81,7 +97,15 @@ void handle_key_down(const sapp_event *ev) {
   }
 }
 void handle_char_event(const sapp_event *ev) {
-  printf("char: %c\n", ev->char_code);
+  switch (ev->char_code) {
+  case 'r':
+    if (rot == ROT_X)
+      rot = ROT_Y;
+    else if (rot == ROT_Y)
+      rot = ROT_Z;
+    else
+      rot = ROT_X;
+  }
 }
 void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
