@@ -1,4 +1,5 @@
 build/
 vendor/
+include/triangle_shader.h
 
 sokol-shdc
