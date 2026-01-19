@@ -11,7 +11,7 @@
 #include "../include/shapes.h"
 #include "../include/triangle_shader.h"
 
-static size_t frames = 0;
+static size_t frame_count = 0;
 static clock_t start_time = 0;
 
 static struct {
@@ -46,6 +46,7 @@ void init(void) {
                                      .clear_value = {0.1, 0.1, 0.1, 1.0}}};
   start_time = clock();
 }
+
 void frame(void) {
   static float rot = 0.0f;
   rot += 0.01f;
@@ -66,10 +67,41 @@ void frame(void) {
 
   sg_end_pass();
   sg_commit();
-  frames++;
 }
+
 void cleanup(void) {}
-void event(const sapp_event *ev) {}
+
+void handle_key_down(const sapp_event *ev) {
+  switch (ev->key_code) {
+  case SAPP_KEYCODE_ESCAPE:
+    sapp_request_quit();
+    break;
+  default:
+    break;
+  }
+}
+void handle_char_event(const sapp_event *ev) {
+  printf("char: %c\n", ev->char_code);
+}
+void handle_quit_requested(const sapp_event *ev) {
+  printf("quitting application\n");
+}
+void event(const sapp_event *ev) {
+  frame_count = ev->frame_count;
+  switch (ev->type) {
+  case SAPP_EVENTTYPE_KEY_DOWN:
+    handle_key_down(ev);
+    break;
+  case SAPP_EVENTTYPE_CHAR:
+    handle_char_event(ev);
+    break;
+  case SAPP_EVENTTYPE_QUIT_REQUESTED:
+    handle_quit_requested(ev);
+    break;
+  default:
+    break;
+  }
+}
 
 int main() {
   sapp_run(&(sapp_desc){
@@ -83,7 +115,8 @@ int main() {
 
   clock_t end_time = clock();
   double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-  printf("total frames rendered: %zu in %.2f seconds (%.2f fps)\n", frames, elapsed_time, frames / elapsed_time);
+  printf("total frames rendered: %zu in %.2f seconds (%.2f fps)\n", frame_count,
+         elapsed_time, frame_count / elapsed_time);
 
   return 0;
 }
