@@ -1,7 +1,8 @@
 @vs vertex_shader
 
 layout(binding=0) uniform vs_params {
-    mat4 mvp;
+    mat4 model; // transform object -> world space
+    mat4 view_proj; // view: camera -> camera space, proj: camera -> clip space. clip -> screen done by GPU perspective division and viewport transformation
 };
 
 in vec3 pos;
@@ -10,7 +11,7 @@ in vec3 color;
 out vec3 out_color;
 
 void main() {
-  gl_Position = mvp * vec4(pos, 1.0);
+  gl_Position = view_proj * model * vec4(pos, 1.0);
   out_color = color;
 }
 
