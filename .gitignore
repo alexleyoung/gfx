@@ -3,3 +3,5 @@ vendor/
 include/triangle_shader.h
 
 sokol-shdc
+
+compile_flags.txt
