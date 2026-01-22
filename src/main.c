@@ -7,9 +7,14 @@
 #include "../vendor/sokol/sokol_gfx.h"
 #include "../vendor/sokol/sokol_glue.h"
 
-#include "../include/my_math.h"
-#include "../include/shapes.h"
-#include "../include/triangle_shader.h"
+#include "cglm/cam.h"
+#include "cglm/mat4.h"
+#include "cglm/struct/mat4.h"
+
+#include "model.h"
+#include "my_math.h"
+#include "shapes.h"
+#include "triangle_shader.h"
 
 enum ROTATION {
   ROT_X,
@@ -25,9 +30,8 @@ static struct {
   sg_pass_action pass_action;
   sg_bindings binding;
   sg_pipeline pipeline;
+  model triangle;
 } state;
-
-const size_t NUM_VERTICES = 0;
 
 void init(void) {
   sg_setup(&(sg_desc){
@@ -35,7 +39,7 @@ void init(void) {
   });
 
   state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
-      .data = SG_RANGE(cube_vertices),
+      .data = SG_RANGE(triangle_vertices),
   });
 
   state.pipeline = sg_make_pipeline(&(sg_pipeline_desc){
@@ -45,42 +49,67 @@ void init(void) {
                          [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
                          [ATTR_triangle_color].format = SG_VERTEXFORMAT_FLOAT3,
                      }},
-      .primitive_type = SG_PRIMITIVETYPE_TRIANGLES,
+      // .primitive_type = SG_PRIMITIVETYPE_TRIANGLES,
   });
 
   state.pass_action =
       (sg_pass_action){.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
                                      .clear_value = {0.1, 0.1, 0.1, 1.0}}};
+  state.triangle = model_new();
+
   start_time = clock();
 }
 
 void frame(void) {
-  static float angle = 0.0f;
-  angle += 0.01f;
+  state.triangle.pos[2] = -1.0f;
+  // state.triangle.pos[2] -= sapp_frame_duration();
+  state.triangle.rot[1] -= sapp_frame_duration();
+  state.triangle.rot[2] -= sapp_frame_duration();
+  state.triangle.scale[0] += 0.01f * sapp_frame_duration();
 
-  vs_params_t vs_params;
-  switch (rot) {
-  case ROT_X:
-    mat4_rotate_x(vs_params.mvp, angle);
-    break;
-  case ROT_Y:
-    mat4_rotate_y(vs_params.mvp, angle);
-    break;
-  case ROT_Z:
-    mat4_rotate_z(vs_params.mvp, angle);
-  }
+  mat4 model, view, proj;
+
+  model_matrix(&state.triangle, model);
+
+  glm_mat4_identity(view);
+
+  vec3 eye = {0.0f, 0.0f, 0.0f};
+  vec3 center = {0.0f, 0.0f, -1.0f};
+  vec3 up = {0.0f, 1.0f, 0.0f};
+  glm_lookat(eye, center, up, view);
+
+  float fov = 90.0f;
+  float width = sapp_widthf();
+  float height = sapp_heightf();
+  float aspect = width / height;
+  float near = 0.1f;
+  float far = 100.0f;
+
+  // static float angle = 0.0f;
+  // angle += 0.01f;
+  //
+  // switch (rot) {
+  // case ROT_X:
+  //   mat4_rotate_x(vs_params.mvp, angle);
+  //   break;
+  // case ROT_Y:
+  //   mat4_rotate_y(vs_params.mvp, angle);
+  //   break;
+  // case ROT_Z:
+  //   mat4_rotate_z(vs_params.mvp, angle);
+  // }
 
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
-
   sg_apply_pipeline(state.pipeline);
   sg_apply_bindings(&state.binding);
-  sg_apply_uniforms(UB_vs_params, &(sg_range){
-                                      .ptr = &vs_params,
-                                      .size = sizeof(vs_params),
-                                  });
-  sg_draw(0, 36, 1);
 
+  // uniforms
+  vs_params_t params = {0};
+  glm_mat4_mulN((mat4 *[]){&proj, &view, &model}, 3, params.mvp);
+  sg_apply_uniforms(UB_vs_params, &SG_RANGE(params));
+
+  sg_draw(0, 3, 1);
   sg_end_pass();
   sg_commit();
 }
