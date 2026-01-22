@@ -7,9 +7,9 @@
 #include "../vendor/sokol/sokol_gfx.h"
 #include "../vendor/sokol/sokol_glue.h"
 
+#define CGLM_ALL_UNALIGNED
 #include "cglm/cam.h"
 #include "cglm/mat4.h"
-#include "cglm/struct/mat4.h"
 
 #include "model.h"
 #include "my_math.h"
@@ -49,7 +49,7 @@ void init(void) {
                          [ATTR_triangle_pos].format = SG_VERTEXFORMAT_FLOAT3,
                          [ATTR_triangle_color].format = SG_VERTEXFORMAT_FLOAT3,
                      }},
-      // .primitive_type = SG_PRIMITIVETYPE_TRIANGLES,
+      .primitive_type = SG_PRIMITIVETYPE_TRIANGLES,
   });
 
   state.pass_action =
@@ -61,19 +61,14 @@ void init(void) {
 }
 
 void frame(void) {
-  state.triangle.pos[2] = -1.0f;
-  // state.triangle.pos[2] -= sapp_frame_duration();
-  state.triangle.rot[1] -= sapp_frame_duration();
-  state.triangle.rot[2] -= sapp_frame_duration();
-  state.triangle.scale[0] += 0.01f * sapp_frame_duration();
+  state.triangle.pos[2] -= sapp_frame_duration();
 
   mat4 model, view, proj;
 
   model_matrix(&state.triangle, model);
 
   glm_mat4_identity(view);
-
-  vec3 eye = {0.0f, 0.0f, 0.0f};
+  vec3 eye = {0.0f, 0.0f, 1.0f};
   vec3 center = {0.0f, 0.0f, -1.0f};
   vec3 up = {0.0f, 1.0f, 0.0f};
   glm_lookat(eye, center, up, view);
@@ -84,6 +79,7 @@ void frame(void) {
   float aspect = width / height;
   float near = 0.1f;
   float far = 100.0f;
+  glm_perspective(fov, aspect, near, far, proj);
 
   // static float angle = 0.0f;
   // angle += 0.01f;
