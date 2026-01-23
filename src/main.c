@@ -75,10 +75,9 @@ void init(void) {
   state.eye[0] = 0.0f;
   state.eye[1] = 0.0f;
   state.eye[2] = 1.0f;
-  state.center[0] = 0.0f;
-  state.center[1] = 0.0f;
-  state.center[2] = -1.0f;
-  state.yaw = state.pitch = 0.0f;
+
+  state.yaw = -90.0f;
+  state.pitch = 0.0f;
 
   start_time = clock();
 }
@@ -177,14 +176,22 @@ void handle_key_up(const sapp_event *ev) {
   }
 }
 void handle_char_event(const sapp_event *ev) {
-  switch (ev->char_code) {}
+  switch (ev->char_code) {
+  case 'c':
+    state.eye[0] = 0.0f;
+    state.eye[1] = 0.0f;
+    state.eye[2] = 1.0f;
+    state.yaw = -90.0f;
+    state.pitch = 0.0f;
+    break;
+  }
 }
 void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
 }
 void handle_mouse_move(const sapp_event *ev) {
   state.yaw += glm_clamp(ev->mouse_dx * horizontal_sens * sapp_frame_duration(),
-                         -89.0f, 89.0f);
+                         -360.0f, 360.0f);
   state.pitch += glm_clamp(
       ev->mouse_dy * -vertical_sens * sapp_frame_duration(), -89.0f, 89.0f);
 }
