@@ -109,7 +109,10 @@ void frame(void) {
   state.forward[0] = cosf(state.yaw) * cosf(state.pitch);
   state.forward[1] = sinf(state.pitch);
   state.forward[2] = sinf(state.yaw) * cosf(state.pitch);
-  glm_vec3_cross(state.forward, state.up, state.right);
+  vec3 flatForward = {state.forward[0], 0.0f, state.forward[2]};
+  glm_vec3_normalize(flatForward);
+  glm_vec3_cross(flatForward, state.up, state.right);
+  glm_vec3_normalize(state.right);
   glm_vec3_add(state.eye, state.forward, state.center);
   glm_lookat(state.eye, state.center, state.up, view);
 
