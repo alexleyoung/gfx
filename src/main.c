@@ -16,21 +16,14 @@
 #include "shapes.h"
 #include "triangle_shader.h"
 
-enum ROTATION {
-  ROT_X,
-  ROT_Y,
-  ROT_Z,
-};
-
 static size_t frame_count = 0;
 static clock_t start_time = 0;
-static enum ROTATION rot = ROT_X;
 
 static struct {
   sg_pass_action pass_action;
   sg_bindings binding;
   sg_pipeline pipeline;
-  model triangle;
+  model cube;
 } state;
 
 void init(void) {
@@ -39,7 +32,7 @@ void init(void) {
   });
 
   state.binding.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
-      .data = SG_RANGE(triangle_vertices),
+      .data = SG_RANGE(cube_vertices),
   });
 
   state.pipeline = sg_make_pipeline(&(sg_pipeline_desc){
@@ -55,17 +48,20 @@ void init(void) {
   state.pass_action =
       (sg_pass_action){.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
                                      .clear_value = {0.1, 0.1, 0.1, 1.0}}};
-  state.triangle = model_new();
+  state.cube = model_new();
+  state.cube.pos[2] -= 1.0f;
 
   start_time = clock();
 }
 
 void frame(void) {
-  state.triangle.pos[2] -= sapp_frame_duration();
+  state.cube.rot[0] -= sapp_frame_duration();
+  state.cube.rot[1] -= sapp_frame_duration();
+  state.cube.rot[2] -= sapp_frame_duration();
 
   mat4 model, view, proj;
 
-  model_matrix(&state.triangle, model);
+  model_matrix(&state.cube, model);
 
   glm_mat4_identity(view);
   vec3 eye = {0.0f, 0.0f, 1.0f};
@@ -81,20 +77,6 @@ void frame(void) {
   float far = 100.0f;
   glm_perspective(fov, aspect, near, far, proj);
 
-  // static float angle = 0.0f;
-  // angle += 0.01f;
-  //
-  // switch (rot) {
-  // case ROT_X:
-  //   mat4_rotate_x(vs_params.mvp, angle);
-  //   break;
-  // case ROT_Y:
-  //   mat4_rotate_y(vs_params.mvp, angle);
-  //   break;
-  // case ROT_Z:
-  //   mat4_rotate_z(vs_params.mvp, angle);
-  // }
-
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
   sg_apply_pipeline(state.pipeline);
@@ -105,7 +87,7 @@ void frame(void) {
   glm_mat4_mulN((mat4 *[]){&proj, &view, &model}, 3, params.mvp);
   sg_apply_uniforms(UB_vs_params, &SG_RANGE(params));
 
-  sg_draw(0, 3, 1);
+  sg_draw(0, 36, 1);
   sg_end_pass();
   sg_commit();
 }
@@ -122,15 +104,7 @@ void handle_key_down(const sapp_event *ev) {
   }
 }
 void handle_char_event(const sapp_event *ev) {
-  switch (ev->char_code) {
-  case 'r':
-    if (rot == ROT_X)
-      rot = ROT_Y;
-    else if (rot == ROT_Y)
-      rot = ROT_Z;
-    else
-      rot = ROT_X;
-  }
+  switch (ev->char_code) {}
 }
 void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
