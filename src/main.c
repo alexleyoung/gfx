@@ -24,7 +24,7 @@ static clock_t start_time = 0;
 
 static float move_speed = 5.0f;
 static float horizontal_sens = 0.5f;
-static float vertical_sens = 0.3f;
+static float vertical_sens = 0.5f;
 
 static struct {
   sg_pass_action pass_action;
@@ -41,6 +41,7 @@ static struct {
   float yaw, pitch; // horizontal, vertical
 
   bool keys_down[SAPP_MAX_KEYCODES];
+  bool lock_mouse;
 } state;
 
 void init(void) {
@@ -80,6 +81,7 @@ void init(void) {
   state.pitch = 0.0f;
 
   start_time = clock();
+  state.lock_mouse = false;
 }
 
 void frame(void) {
@@ -184,16 +186,21 @@ void handle_char_event(const sapp_event *ev) {
     state.yaw = -90.0f;
     state.pitch = 0.0f;
     break;
+  case 'l':
+    state.lock_mouse = !state.lock_mouse;
+    sapp_lock_mouse(state.lock_mouse);
+    break;
   }
 }
 void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
 }
 void handle_mouse_move(const sapp_event *ev) {
-  state.yaw += glm_clamp(ev->mouse_dx * horizontal_sens * sapp_frame_duration(),
-                         -360.0f, 360.0f);
-  state.pitch += glm_clamp(
-      ev->mouse_dy * -vertical_sens * sapp_frame_duration(), -89.0f, 89.0f);
+  state.yaw += ev->mouse_dx * horizontal_sens * sapp_frame_duration();
+  state.pitch += ev->mouse_dy * -vertical_sens * sapp_frame_duration();
+  const float maxPitch = glm_rad(89.0f);
+  const float minPitch = -maxPitch;
+  state.pitch = glm_clamp(state.pitch, minPitch, maxPitch);
 }
 void event(const sapp_event *ev) {
   frame_count = ev->frame_count;
