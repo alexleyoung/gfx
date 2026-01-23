@@ -1,3 +1,4 @@
+#include <math.h>
 #include <time.h>
 
 #define SOKOL_IMPL
@@ -10,6 +11,8 @@
 #define CGLM_ALL_UNALIGNED
 #include "cglm/cam.h"
 #include "cglm/mat4.h"
+#include "cglm/util.h"
+#include "cglm/vec3.h"
 
 #include "model.h"
 #include "my_math.h"
@@ -19,11 +22,25 @@
 static size_t frame_count = 0;
 static clock_t start_time = 0;
 
+static float move_speed = 5.0f;
+static float horizontal_sens = 0.5f;
+static float vertical_sens = 0.3f;
+
 static struct {
   sg_pass_action pass_action;
   sg_bindings binding;
   sg_pipeline pipeline;
+
   model cube;
+
+  vec3 up;
+  vec3 eye;
+  vec3 center;
+  vec3 forward;
+  vec3 right;
+  float yaw, pitch; // horizontal, vertical
+
+  bool keys_down[SAPP_MAX_KEYCODES];
 } state;
 
 void init(void) {
@@ -51,23 +68,49 @@ void init(void) {
   state.cube = model_new();
   state.cube.pos[2] -= 1.0f;
 
+  state.up[0] = 0.0f;
+  state.up[1] = 1.0f;
+  state.up[2] = 0.0f;
+
+  state.eye[0] = 0.0f;
+  state.eye[1] = 0.0f;
+  state.eye[2] = 1.0f;
+  state.center[0] = 0.0f;
+  state.center[1] = 0.0f;
+  state.center[2] = -1.0f;
+  state.yaw = state.pitch = 0.0f;
+
   start_time = clock();
 }
 
 void frame(void) {
-  state.cube.rot[0] -= sapp_frame_duration();
-  state.cube.rot[1] -= sapp_frame_duration();
-  state.cube.rot[2] -= sapp_frame_duration();
+  float dt = (float)sapp_frame_duration();
+
+  if (state.keys_down[SAPP_KEYCODE_W])
+    glm_vec3_muladds(state.forward, move_speed * dt,
+                     state.eye); // eye += forward * speed * dt
+  if (state.keys_down[SAPP_KEYCODE_S])
+    glm_vec3_muladds(state.forward, -move_speed * dt,
+                     state.eye); // eye -= forward * speed * dt
+  /* strafe left / right */
+  if (state.keys_down[SAPP_KEYCODE_A])
+    glm_vec3_muladds(state.right, -move_speed * dt,
+                     state.eye); // eye -= right * speed * dt
+  if (state.keys_down[SAPP_KEYCODE_D])
+    glm_vec3_muladds(state.right, move_speed * dt,
+                     state.eye); // eye += right * speed * dt
 
   mat4 model, view, proj;
 
   model_matrix(&state.cube, model);
 
   glm_mat4_identity(view);
-  vec3 eye = {0.0f, 0.0f, 1.0f};
-  vec3 center = {0.0f, 0.0f, -1.0f};
-  vec3 up = {0.0f, 1.0f, 0.0f};
-  glm_lookat(eye, center, up, view);
+  state.forward[0] = cosf(state.yaw) * cosf(state.pitch);
+  state.forward[1] = sinf(state.pitch);
+  state.forward[2] = sinf(state.yaw) * cosf(state.pitch);
+  glm_vec3_cross(state.forward, state.up, state.right);
+  glm_vec3_add(state.eye, state.forward, state.center);
+  glm_lookat(state.eye, state.center, state.up, view);
 
   float fov = 90.0f;
   float width = sapp_widthf();
@@ -99,6 +142,36 @@ void handle_key_down(const sapp_event *ev) {
   case SAPP_KEYCODE_ESCAPE:
     sapp_request_quit();
     break;
+  case SAPP_KEYCODE_W:
+    state.keys_down[SAPP_KEYCODE_W] = true;
+    break;
+  case SAPP_KEYCODE_A:
+    state.keys_down[SAPP_KEYCODE_A] = true;
+    break;
+  case SAPP_KEYCODE_S:
+    state.keys_down[SAPP_KEYCODE_S] = true;
+    break;
+  case SAPP_KEYCODE_D:
+    state.keys_down[SAPP_KEYCODE_D] = true;
+    break;
+  default:
+    break;
+  }
+}
+void handle_key_up(const sapp_event *ev) {
+  switch (ev->key_code) {
+  case SAPP_KEYCODE_W:
+    state.keys_down[SAPP_KEYCODE_W] = false;
+    break;
+  case SAPP_KEYCODE_A:
+    state.keys_down[SAPP_KEYCODE_A] = false;
+    break;
+  case SAPP_KEYCODE_S:
+    state.keys_down[SAPP_KEYCODE_S] = false;
+    break;
+  case SAPP_KEYCODE_D:
+    state.keys_down[SAPP_KEYCODE_D] = false;
+    break;
   default:
     break;
   }
@@ -109,17 +182,29 @@ void handle_char_event(const sapp_event *ev) {
 void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
 }
+void handle_mouse_move(const sapp_event *ev) {
+  state.yaw += glm_clamp(ev->mouse_dx * horizontal_sens * sapp_frame_duration(),
+                         -89.0f, 89.0f);
+  state.pitch += glm_clamp(
+      ev->mouse_dy * -vertical_sens * sapp_frame_duration(), -89.0f, 89.0f);
+}
 void event(const sapp_event *ev) {
   frame_count = ev->frame_count;
   switch (ev->type) {
   case SAPP_EVENTTYPE_KEY_DOWN:
     handle_key_down(ev);
     break;
+  case SAPP_EVENTTYPE_KEY_UP:
+    handle_key_up(ev);
+    break;
   case SAPP_EVENTTYPE_CHAR:
     handle_char_event(ev);
     break;
   case SAPP_EVENTTYPE_QUIT_REQUESTED:
     handle_quit_requested(ev);
+    break;
+  case SAPP_EVENTTYPE_MOUSE_MOVE:
+    handle_mouse_move(ev);
     break;
   default:
     break;
