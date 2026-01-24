@@ -1,3 +1,4 @@
+#include <X11/Xlib.h>
 #include <math.h>
 #include <time.h>
 
@@ -19,12 +20,21 @@
 #include "shapes.h"
 #include "triangle_shader.h"
 
+#define RES_1080P {1920.0f, 1080.0f}
+#define RES_720P {1280.0f, 720.0f}
+#define RES_800x800 {800.0f, 800.0f}
+#define AR_4_3 4.0f / 3.0f
+#define AR_16_9 16.0f / 9.0f
+
 static size_t frame_count = 0;
 static clock_t start_time = 0;
 
 static float move_speed = 5.0f;
 static float horizontal_sens = 0.5f;
 static float vertical_sens = 0.5f;
+
+static vec2 resolution = RES_1080P;
+static float aspect = AR_16_9;
 
 static struct {
   sg_pass_action pass_action;
@@ -93,13 +103,17 @@ void frame(void) {
   if (state.keys_down[SAPP_KEYCODE_S])
     glm_vec3_muladds(state.forward, -move_speed * dt,
                      state.eye); // eye -= forward * speed * dt
-  /* strafe left / right */
   if (state.keys_down[SAPP_KEYCODE_A])
     glm_vec3_muladds(state.right, -move_speed * dt,
                      state.eye); // eye -= right * speed * dt
   if (state.keys_down[SAPP_KEYCODE_D])
     glm_vec3_muladds(state.right, move_speed * dt,
                      state.eye); // eye += right * speed * dt
+
+  if (state.keys_down[SAPP_KEYCODE_SPACE])
+    glm_vec3_muladds(state.up, move_speed * dt, state.eye);
+  if (state.keys_down[SAPP_KEYCODE_LEFT_CONTROL])
+    glm_vec3_muladds(state.up, -move_speed * dt, state.eye);
 
   mat4 model, view, proj;
 
@@ -117,9 +131,6 @@ void frame(void) {
   glm_lookat(state.eye, state.center, state.up, view);
 
   float fov = 90.0f;
-  float width = sapp_widthf();
-  float height = sapp_heightf();
-  float aspect = width / height;
   float near = 0.1f;
   float far = 100.0f;
   glm_perspective(fov, aspect, near, far, proj);
@@ -158,6 +169,12 @@ void handle_key_down(const sapp_event *ev) {
   case SAPP_KEYCODE_D:
     state.keys_down[SAPP_KEYCODE_D] = true;
     break;
+  case SAPP_KEYCODE_SPACE:
+    state.keys_down[SAPP_KEYCODE_SPACE] = true;
+    break;
+  case SAPP_KEYCODE_LEFT_CONTROL:
+    state.keys_down[SAPP_KEYCODE_LEFT_CONTROL] = true;
+    break;
   default:
     break;
   }
@@ -176,6 +193,12 @@ void handle_key_up(const sapp_event *ev) {
   case SAPP_KEYCODE_D:
     state.keys_down[SAPP_KEYCODE_D] = false;
     break;
+  case SAPP_KEYCODE_SPACE:
+    state.keys_down[SAPP_KEYCODE_SPACE] = false;
+    break;
+  case SAPP_KEYCODE_LEFT_CONTROL:
+    state.keys_down[SAPP_KEYCODE_LEFT_CONTROL] = false;
+    break;
   default:
     break;
   }
@@ -189,10 +212,6 @@ void handle_char_event(const sapp_event *ev) {
     state.yaw = -90.0f;
     state.pitch = 0.0f;
     break;
-  case 'l':
-    state.lock_mouse = !state.lock_mouse;
-    sapp_lock_mouse(state.lock_mouse);
-    break;
   }
 }
 void handle_quit_requested(const sapp_event *ev) {
@@ -205,6 +224,8 @@ void handle_mouse_move(const sapp_event *ev) {
   const float minPitch = -maxPitch;
   state.pitch = glm_clamp(state.pitch, minPitch, maxPitch);
 }
+void handle_mouse_down(const sapp_event *ev) { sapp_lock_mouse(true); }
+void handle_mouse_up(const sapp_event *ev) {}
 void event(const sapp_event *ev) {
   frame_count = ev->frame_count;
   switch (ev->type) {
@@ -223,6 +244,12 @@ void event(const sapp_event *ev) {
   case SAPP_EVENTTYPE_MOUSE_MOVE:
     handle_mouse_move(ev);
     break;
+  case SAPP_EVENTTYPE_MOUSE_DOWN:
+    handle_mouse_down(ev);
+    break;
+  case SAPP_EVENTTYPE_MOUSE_UP:
+    handle_mouse_up(ev);
+    break;
   default:
     break;
   }
@@ -234,8 +261,8 @@ int main() {
       .frame_cb = frame,
       .cleanup_cb = cleanup,
       .event_cb = event,
-      .width = 800,
-      .height = 800,
+      .width = resolution[0],
+      .height = resolution[1],
   });
 
   clock_t end_time = clock();
