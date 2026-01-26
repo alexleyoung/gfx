@@ -224,7 +224,12 @@ void handle_mouse_move(const sapp_event *ev) {
   const float minPitch = -maxPitch;
   state.pitch = glm_clamp(state.pitch, minPitch, maxPitch);
 }
-void handle_mouse_down(const sapp_event *ev) { sapp_lock_mouse(true); }
+void handle_mouse_down(const sapp_event *ev) {
+  if (ev->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+    sapp_lock_mouse(true);
+  else
+    sapp_lock_mouse(false);
+}
 void handle_mouse_up(const sapp_event *ev) {}
 void event(const sapp_event *ev) {
   frame_count = ev->frame_count;
