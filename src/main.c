@@ -30,10 +30,12 @@ static size_t frame_count = 0;
 static clock_t start_time = 0;
 
 static float move_speed = 5.0f;
+static float vim_horizontal_sens = 10.0f;
+static float vim_vertical_sens = 10.0f;
 static float horizontal_sens = 0.5f;
 static float vertical_sens = 0.5f;
 
-static vec2 resolution = RES_1080P;
+static vec2 resolution = RES_720P;
 static float aspect = AR_16_9;
 
 static struct {
@@ -53,6 +55,14 @@ static struct {
   bool keys_down[SAPP_MAX_KEYCODES];
   bool lock_mouse;
 } state;
+
+void move_camera_look(float dx, float dy, double dt) {
+  state.yaw += dx * horizontal_sens * dt;
+  state.pitch += dy * -vertical_sens * dt;
+  const float maxPitch = glm_rad(89.0f);
+  const float minPitch = -maxPitch;
+  state.pitch = glm_clamp(state.pitch, minPitch, maxPitch);
+}
 
 void init(void) {
   sg_setup(&(sg_desc){
@@ -97,6 +107,7 @@ void init(void) {
 void frame(void) {
   float dt = (float)sapp_frame_duration();
 
+  // wasd movement
   if (state.keys_down[SAPP_KEYCODE_W])
     glm_vec3_muladds(state.forward, move_speed * dt,
                      state.eye); // eye += forward * speed * dt
@@ -110,10 +121,21 @@ void frame(void) {
     glm_vec3_muladds(state.right, move_speed * dt,
                      state.eye); // eye += right * speed * dt
 
+  // vertical movement
   if (state.keys_down[SAPP_KEYCODE_SPACE])
     glm_vec3_muladds(state.up, move_speed * dt, state.eye);
   if (state.keys_down[SAPP_KEYCODE_LEFT_CONTROL])
     glm_vec3_muladds(state.up, -move_speed * dt, state.eye);
+
+  // vim camera movement
+  if (state.keys_down[SAPP_KEYCODE_H])
+    move_camera_look(-vim_horizontal_sens, 0.0f, dt);
+  if (state.keys_down[SAPP_KEYCODE_J])
+    move_camera_look(0.0f, vim_vertical_sens, dt);
+  if (state.keys_down[SAPP_KEYCODE_K])
+    move_camera_look(0.0f, -vim_vertical_sens, dt);
+  if (state.keys_down[SAPP_KEYCODE_L])
+    move_camera_look(vim_horizontal_sens, 0.0f, dt);
 
   mat4 model, view, proj;
 
@@ -169,12 +191,27 @@ void handle_key_down(const sapp_event *ev) {
   case SAPP_KEYCODE_D:
     state.keys_down[SAPP_KEYCODE_D] = true;
     break;
+
   case SAPP_KEYCODE_SPACE:
     state.keys_down[SAPP_KEYCODE_SPACE] = true;
     break;
   case SAPP_KEYCODE_LEFT_CONTROL:
     state.keys_down[SAPP_KEYCODE_LEFT_CONTROL] = true;
     break;
+
+  case SAPP_KEYCODE_H:
+    state.keys_down[SAPP_KEYCODE_H] = true;
+    break;
+  case SAPP_KEYCODE_J:
+    state.keys_down[SAPP_KEYCODE_J] = true;
+    break;
+  case SAPP_KEYCODE_K:
+    state.keys_down[SAPP_KEYCODE_K] = true;
+    break;
+  case SAPP_KEYCODE_L:
+    state.keys_down[SAPP_KEYCODE_L] = true;
+    break;
+
   default:
     break;
   }
@@ -193,12 +230,27 @@ void handle_key_up(const sapp_event *ev) {
   case SAPP_KEYCODE_D:
     state.keys_down[SAPP_KEYCODE_D] = false;
     break;
+
   case SAPP_KEYCODE_SPACE:
     state.keys_down[SAPP_KEYCODE_SPACE] = false;
     break;
   case SAPP_KEYCODE_LEFT_CONTROL:
     state.keys_down[SAPP_KEYCODE_LEFT_CONTROL] = false;
     break;
+
+  case SAPP_KEYCODE_H:
+    state.keys_down[SAPP_KEYCODE_H] = false;
+    break;
+  case SAPP_KEYCODE_J:
+    state.keys_down[SAPP_KEYCODE_J] = false;
+    break;
+  case SAPP_KEYCODE_K:
+    state.keys_down[SAPP_KEYCODE_K] = false;
+    break;
+  case SAPP_KEYCODE_L:
+    state.keys_down[SAPP_KEYCODE_L] = false;
+    break;
+
   default:
     break;
   }
@@ -218,11 +270,7 @@ void handle_quit_requested(const sapp_event *ev) {
   printf("quitting application\n");
 }
 void handle_mouse_move(const sapp_event *ev) {
-  state.yaw += ev->mouse_dx * horizontal_sens * sapp_frame_duration();
-  state.pitch += ev->mouse_dy * -vertical_sens * sapp_frame_duration();
-  const float maxPitch = glm_rad(89.0f);
-  const float minPitch = -maxPitch;
-  state.pitch = glm_clamp(state.pitch, minPitch, maxPitch);
+  move_camera_look(ev->mouse_dx, ev->mouse_dy, sapp_frame_duration());
 }
 void handle_mouse_down(const sapp_event *ev) {
   if (ev->mouse_button == SAPP_MOUSEBUTTON_LEFT)
