@@ -5,3 +5,6 @@ include/triangle_shader.h
 sokol-shdc
 
 compile_flags.txt
+
+design.md
+todo.md
