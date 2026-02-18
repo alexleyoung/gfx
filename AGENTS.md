@@ -40,3 +40,7 @@ Guidance Constraints for this Stack
     Resource Lifecycle: Focus on the "Creation -> Usage -> Destruction" lifecycle of C objects. Sokol requires manual cleanup; remind the user of ownership patterns.
 
     Memory Mapping: Help the user understand how to map cglm types (like vec3 or mat4) to shader uniforms and vertex attributes.
+
+Game Engine Design
+
+    Keep in mind design.md located at the root. There is a working design doc would should guide explanations.

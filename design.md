@@ -1,221 +1,163 @@
-# agfx - alex's graphics (framework)
+# agfx
 
-> "A Raylib-inspired 3D rendering engine for C with glTF support"
-
-## Overview
-
-AGFX is a lightweight 3D rendering library designed to make it easy to load and render 3D models (primarily glTF format) using modern OpenGL with Sokol. It follows Raylib's design philosophy: simple API, automatic resource management, and focus on getting things on screen quickly.
+> a 3D game engine for FPS-style games
 
 ## Design Philosophy
 
-1. **Simplicity First**: Single-header library, intuitive function names
-2. **Resource Management**: Load/Unload pattern with automatic cleanup
-3. **glTF-Centric**: Primary focus on glTF 2.0 format
-4. **Sokol Backend**: Leverages existing Sokol graphics foundation
-5. **C-First**: Plain C99, no C++ required
+1. **Fundamentals First**: Every system teaches a core concept. No black boxes.
+2. **From Scratch**: Implement physics, collision, and rendering yourself. Learn by building.
+3. **Simple Geometries**: Boxes only (for now). Simple enough to understand in an afternoon.
+4. **Game-Ready**: Designed to build actual games, not just render scenes.
+5. **C-First**: Plain C99. No C++, no external tools required.
+
+## Core Capabilities
+
+### 1. Physics System: Swept AABB
+- Collision detection before impact (swept)
+- Wall sliding when pushing into surfaces
+- Gravity and jumping support
+- Ground detection for stairs/ledges
+
+**What it teaches**: Collision detection, game loops, vector math
+
+### 2. FPS Camera
+- Mouse-captured free-look (pitch + yaw)
+- WASD + strafing movement
+- Natural FPS controls (no gimbal lock)
+
+**What it teaches**: View matrices, input handling, Euler angles
+
+### 3. Map System (Engine-Built)
+- Text-based format: `box x y z w h d color`
+- Parse at runtime, no external tools
+- Auto-generate collision from boxes
+- Load/save levels from disk
+
+**What it teaches**: File I/O, parsing, scene graph basics
+
+### 4. Solid-Color Rendering
+- No textures, no PBR (for now)
+- Flat shading per brush
+- Fast and clean rendering pipeline
+
+**What it teaches**: Vertex buffers, graphics pipeline, shaders
 
 ## Architecture
 
-### High-Level Structure
-
 ```
 src/
-├── agfx.c           # Core API implementation
-├── agfx_math.c      # Vector/Matrix math (cglm wrapper)
-├── agfx_render.c    # Rendering backend (Sokol)
-├── agfx_loader.c    # glTF loader (cgltf)
-├── agfx_camera.c    # Camera systems
-├── agfx_models.c    # Model/Mesh handling
-└── agfx_utils.c     # Utilities, logging, file I/O
+├── agfx.c            # Public API implementation
+├── agfx_physics.c    # Swept AABB collision
+├── agfx_camera.c     # FPS camera controller
+├── agfx_map.c        # Map parser & builder
+├── agfx_render.c     # Sokol renderer
+├── agfx_math.c       # cglm wrapper
+└── agfx_utils.c      # File I/O, logging
 
 include/
-├── agfx.h           # Public API header
-├── agfx_math.h      # Math types and functions
-└── agfx_types.h     # Core type definitions
+├── agfx.h            # Public API
+├── agfx_types.h      # Core types
+├── agfx_physics.h    # Physics types
+├── agfx_camera.h     # Camera API
+└── agfx_map.h        # Map API
 ```
 
-### Component Breakdown
+## Resource Management
 
-#### 1. Core Types (`agfx_types.h`)
-- **Vector2/3/4**: Position, rotation, scale
-- **Matrix**: 4x4 transformation matrix
-- **Color**: RGBA color structure
-- **Texture**: GPU texture handle + metadata
-- **Material**: Properties (color, metallic, roughness, textures)
-- **Mesh**: Vertex data (positions, normals, UVs) + GPU buffers
-- **Model**: Collection of meshes + materials + transforms
-- **Camera**: View/projection parameters
-- **Scene**: Node hierarchy for complex models
+All resources follow manual Load/Unload pattern for explicit control:
 
-#### 2. Math Module (`agfx_math.h`)
-- Wraps cglm for performance
-- Provides familiar Raylib-style functions
-- Handles coordinate system conversions
-- **Example**: `Vector3Add()`, `MatrixMultiply()`, `QuaternionSlerp()`
+```c
+Map* map = LoadMap("level1.txt");
+Camera camera = CameraCreate(/*...*/);
+while (running) {
+    CameraUpdate(&camera, dt);
+    PhysicsUpdate(player, map, dt);
+    RenderFrame(camera, map);
+}
+UnloadMap(map);
+```
 
-#### 3. Rendering Backend (`agfx_render.c`)
-- **Sokol-based**: Uses existing sokol_gfx.h
-- **Shader system**: Default PBR shader + material-specific overrides
-- **Resource management**: Automatic GPU resource cleanup
-- **Batching**: Basic material-based grouping (future: advanced batching)
+## Dependencies
 
-#### 4. glTF Loader (`agfx_loader.c`)
-- **cgltf integration**: Parse glTF files
-- **Mesh extraction**: Convert glTF primitives to AGFX meshes
-- **Material parsing**: PBR metal/roughness workflow
-- **Texture loading**: Embedded and external textures
-- **Scene hierarchy**: Convert glTF nodes to AGFX scene graph
+- **Sokol** (graphics backend) ✓
+- **cglm** (math) ✓
+- **Custom file format** (map data)
 
-#### 5. Camera System (`agfx_camera.c`)
-- **Multiple modes**: Free, orbital, first-person, third-person
-- **Input handling**: Mouse/keyboard integration
-- **Matrix generation**: View and projection matrices
-- **Smooth movement**: Lerp/lerp for camera transitions
-
-#### 6. Model Management (`agfx_models.c`)
-- **Mesh generation**: Cube, sphere, plane, cylinder
-- **Model transforms**: Position, rotation, scale
-- **Bounding boxes**: For culling and physics
-- **Instancing**: Efficient rendering of repeated objects
-
-## API Design Examples
-
-### Basic Usage Pattern
+## Example Usage
 
 ```c
 #include "agfx.h"
 
 int main() {
     // Initialize
-    InitWindow(1280, 720, "AGFX Demo");
-    
-    // Load resources
-    Camera camera = CreateCamera(
-        (Vector3){0, 2, 5},    // position
-        (Vector3){0, 0, 0},    // target
-        (Vector3){0, 1, 0},    // up
-        45.0f                  // FOV
-    );
-    
-    Model model = LoadModel("assets/models/character.gltf");
-    
-    // Render loop
+    agfx_init((agfx_desc){
+        .width = 1280,
+        .height = 720,
+        .title = "AGFX FPS Demo"
+    });
+
+    // Build or load level
+    Map* map = MapCreate();
+    AddBox(map, (vec3){0,0,0}, (vec3){10,2,20}, (Color){80,80,80});
+    AddBox(map, (vec3){5,2,8}, (vec3){2,2,2}, (Color){200,50,50});
+    MapSave(map, "level1.txt");
+
+    // Player setup
+    Player player = {
+        .position = {0, 3, 0},
+        .velocity = {0, 0, 0},
+        .size = {0.5f, 1.8f, 0.5f}  // Doom guy proportions
+    };
+
+    Camera camera = CameraCreate(&player);
+
+    // Game loop
     while (!WindowShouldClose()) {
-        // Update
-        UpdateCamera(&camera);
-        
-        // Draw
+        float dt = GetFrameTime();
+
+        // Input → Camera → Physics
+        CameraUpdate(&camera, dt);
+        PlayerUpdate(&player, &camera, dt);
+        PhysicsCollide(&player, map, dt);
+
+        // Render
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        
-        BeginMode3D(camera);
-        DrawModel(model, Vector3Zero(), 1.0f, WHITE);
-        DrawGrid(10, 1.0f);
+        ClearBackground(SKY);
+        BeginMode3D(&camera);
+        RenderMap(map);
+        RenderPlayer(&player);
         EndMode3D();
-        
         EndDrawing();
     }
-    
+
     // Cleanup
-    UnloadModel(model);
-    CloseWindow();
-    return 0;
+    UnloadMap(map);
+    agfx_shutdown();
 }
 ```
 
-### Resource Management
+## Roadmap
 
-```c
-// Load
-Model model = LoadModel("scene.gltf");
-Material material = LoadMaterialDefault();
+### Phase 1: Foundation
+Project setup, core types, render loop
 
-// Modify
-SetModelMaterial(&model, 0, material);
-SetMaterialTexture(&material, MAP_DIFFUSE, texture);
+### Phase 2: Camera
+FPS camera with mouse control
 
-// Draw
-DrawModel(model, position, scale, tint);
+### Phase 3: Physics
+Collision detection and response
 
-// Unload - automatically frees all GPU resources
-UnloadModel(model);
-```
+### Phase 4: Map System
+Level format and loading
 
-### Camera Controls
+### Phase 5: Integration
+Putting it all together
 
-```c
-// Setup camera with mode
-Camera camera = CreateCamera(...);
-SetCameraMode(camera, CAMERA_FREE);  // or CAMERA_ORBITAL, CAMERA_FIRST_PERSON
+### Future
+- Entity system
+- Enemy AI (FSM)
+- Weapons
+- Heightfield terrain
+- Textures
 
-// Update handles input automatically
-UpdateCamera(&camera);
-
-// Get matrices for custom rendering
-Matrix view = GetCameraMatrix(camera);
-Matrix proj = GetCameraProjection(camera, aspect);
-```
-
-### Mesh Generation
-
-```c
-// Built-in shapes
-Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
-Mesh sphere = GenMeshSphere(1.0f, 16, 16);
-Mesh plane = GenMeshPlane(10.0f, 10.0f);
-
-// Create model from mesh
-Model model = LoadModelFromMesh(cube);
-```
-
-## Key Features
-
-### 1. glTF 2.0 Support
-- **Mesh loading**: Vertices, indices, normals, UVs
-- **Materials**: PBR metal/roughness workflow
-- **Textures**: Embedded base64 and external files
-- **Hierarchy**: Node transforms and parenting
-- **Animations**: Basic skeletal animation support
-
-### 2. Rendering Pipeline
-```
-Input → Camera → Transform → Shading → Output
-          ↓           ↓          ↓
-       View Matrix  Model     Material
-       Proj Matrix  Mesh      Shader
-```
-
-### 3. Shader System
-- **Default shader**: Basic PBR lighting
-- **Material overrides**: Custom per-material shaders
-- **Uniform management**: Automatic matrix passing
-
-### 4. Resource Tracking
-- **Automatic cleanup**: Reference counting
-- **Error handling**: Graceful fallbacks
-- **Logging**: Optional debug output
-
-## Dependencies
-
-### Required
-- **Sokol** (graphics backend) - Already in vendor/
-- **cglm** (math) - Already in vendor/
-- **cgltf** (glTF loader) - Need to add
-
-### Optional
-- **stb_image** (texture loading) - Could integrate
-- **miniaudio** (future audio support)
-
-## Integration with Current Code
-
-Your existing codebase provides:
-- Sokol setup and initialization
-- Shader compilation pipeline
-- Basic vertex buffer management
-- Camera math (using cglm)
-
-AGFX will:
-- **Abstract** these into clean API functions
-- **Enhance** with glTF loading
-- **Simplify** model management
-- **Expand** with camera controls
+This is a teaching engine. The goal is understanding, not convenience.

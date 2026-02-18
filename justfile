@@ -8,7 +8,7 @@ build: build_main
 
 build_main: vendor
 	mkdir -p build
-	clang src/main.c src/my_math.c src/model.c -o build/main -lX11 -lXi -lXcursor -lGL -lasound -ldl -lm -Iinclude -Ivendor/cglm/include
+	clang src/*.c -o build/main -lX11 -lXi -lXcursor -lGL -lasound -ldl -lm -Iinclude -Ivendor/cglm/include
 
 # Clean, build, generate shaders, and run
 run: clean shader build

@@ -16,7 +16,6 @@
 #include "cglm/vec3.h"
 
 #include "model.h"
-#include "my_math.h"
 #include "shapes.h"
 #include "triangle_shader.h"
 
@@ -53,7 +52,6 @@ static struct {
   float yaw, pitch; // horizontal, vertical
 
   bool keys_down[SAPP_MAX_KEYCODES];
-  bool lock_mouse;
 } state;
 
 void move_camera_look(float dx, float dy, double dt) {
@@ -101,7 +99,8 @@ void init(void) {
   state.pitch = 0.0f;
 
   start_time = clock();
-  state.lock_mouse = false;
+
+  sapp_lock_mouse(true);
 }
 
 void frame(void) {
